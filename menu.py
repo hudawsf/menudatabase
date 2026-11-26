@@ -1,7 +1,7 @@
 
 import streamlit as st
-import mysql.connector
 import pandas as pd
+from database import koneksi
 
 def tampilkan_menu():
 
@@ -21,22 +21,21 @@ def tampilkan_menu():
 
         st.title("Daftar Menu Kafe")
 
-        db = mysql.connector.connect(
-            host="127.0.0.1",
-            port=8889,
-            user="root",
-            password="root",
-            database="db_kafe"
-        )
+        try:
+            db = koneksi()
 
-        query = "SELECT * FROM menu"
-        data = pd.read_sql(query, db)
+            query = "SELECT * FROM menu"
+            data = pd.read_sql(query, db)
 
-        st.dataframe(data)
+            st.dataframe(data)
 
-        st.write("Jumlah Menu:", len(data))
+            st.write("Jumlah Menu:", len(data))
 
-        db.close()
+            db.close()
+
+        except Exception as e:
+            st.error("Gagal mengambil data menu:")
+            st.error(str(e))
 
     elif pilihan == "Logout":
 
