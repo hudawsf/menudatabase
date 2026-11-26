@@ -1,11 +1,14 @@
 
 import streamlit as st
-import mysql.connector
+from database import koneksi
 import menu
 
 # Mengecek status login
 if "login" not in st.session_state:
     st.session_state["login"] = False
+
+if "username" not in st.session_state:
+    st.session_state["username"] = ""
 
 
 # =====================
@@ -22,74 +25,98 @@ if not st.session_state["login"]:
         horizontal=True
     )
 
+    # =====================
     # LOGIN
+    # =====================
+
     if pilihan == "Login":
 
         st.subheader("Login Pengguna")
 
         username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+        password = st.text_input(
+            "Password",
+            type="password"
+        )
 
         if st.button("Masuk"):
 
-            db = mysql.connector.connect(
-                host="127.0.0.1",
-                port=8889,
-                user="root",
-                password="root",
-                database="db_kafe"
-            )
+            try:
+                db = koneksi()
+                cursor = db.cursor()
 
-            cursor = db.cursor()
+                sql = """
+                SELECT * FROM users
+                WHERE username=%s AND password=%s
+                """
 
-            sql = "SELECT * FROM users WHERE username=%s AND password=%s"
-            cursor.execute(sql, (username, password))
+                cursor.execute(sql, (username, password))
+                hasil = cursor.fetchone()
 
-            hasil = cursor.fetchone()
+                if hasil:
+                    st.session_state["login"] = True
+                    st.session_state["username"] = username
 
-            if hasil:
-                st.session_state["login"] = True
-                st.session_state["username"] = username
-                st.rerun()
-            else:
-                st.error("Login Gagal!")
+                    st.success("Login Berhasil!")
+                    st.rerun()
 
-            cursor.close()
-            db.close()
+                else:
+                    st.error("Login Gagal! Periksa username dan password.")
 
+                cursor.close()
+                db.close()
+
+            except Exception as e:
+                st.error("Terjadi kesalahan:")
+                st.error(str(e))
+
+
+    # =====================
     # REGISTER
+    # =====================
+
     elif pilihan == "Register":
 
         st.subheader("Pendaftaran Pengguna Baru")
 
         nama = st.text_input("Nama")
         username = st.text_input("Username Baru")
-        password = st.text_input("Password Baru", type="password")
+        password = st.text_input(
+            "Password Baru",
+            type="password"
+        )
 
         if st.button("Daftar"):
 
-            db = mysql.connector.connect(
-                host="127.0.0.1",
-                port=8889,
-                user="root",
-                password="root",
-                database="db_kafe"
-            )
+            if nama and username and password:
 
-            cursor = db.cursor()
+                try:
+                    db = koneksi()
+                    cursor = db.cursor()
 
-            sql = """
-            INSERT INTO users (nama, username, password)
-            VALUES (%s, %s, %s)
-            """
+                    sql = """
+                    INSERT INTO users (nama, username, password)
+                    VALUES (%s, %s, %s)
+                    """
 
-            cursor.execute(sql, (nama, username, password))
-            db.commit()
+                    cursor.execute(
+                        sql,
+                        (nama, username, password)
+                    )
 
-            st.success("Register Berhasil!")
+                    db.commit()
 
-            cursor.close()
-            db.close()
+                    st.success("Register Berhasil!")
+
+                    cursor.close()
+                    db.close()
+
+                except Exception as e:
+                    st.error("Register Gagal:")
+                    st.error(str(e))
+
+            else:
+                st.warning("Semua data harus diisi!")
 
 
 # =====================
